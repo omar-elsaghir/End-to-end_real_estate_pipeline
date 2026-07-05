@@ -184,6 +184,16 @@
       <label for="location">Location</label>
       <select id="location" required></select>
     </div>
+    <div class="field full">
+      <label for="compound">Compound / project</label>
+      <select id="compound"></select>
+    </div>
+    <div class="field full">
+      <div class="toggle-row">
+        <input type="checkbox" id="is_ready">
+        <label for="is_ready">Ready to move in</label>
+      </div>
+    </div>
     <button type="submit" id="submit-btn">Estimate price</button>
   </form>
 
@@ -207,6 +217,7 @@ async function loadMeta() {
 
   fillSelect('location', data.locations);
   fillSelect('property_type', data.property_types);
+  fillSelect('compound', data.compounds);
 }
 
 function fillSelect(id, options) {
@@ -237,6 +248,8 @@ document.getElementById('predict-form').addEventListener('submit', async (e) => 
     bathrooms: Number(document.getElementById('bathrooms').value),
     location: document.getElementById('location').value,
     property_type: document.getElementById('property_type').value,
+    compound: document.getElementById('compound').value,
+    is_ready: document.getElementById('is_ready').checked ? 1 : 0,
   };
 
   try {
