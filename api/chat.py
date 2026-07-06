@@ -19,16 +19,65 @@ SYSTEM_PROMPT = """
 4. gold_area_segment: area_segment (STRING), total_properties (BIGINT), avg_price (DOUBLE).
 5. gold_top_expensive: title (STRING), location (STRING), price (DOUBLE), area (DOUBLE).
 
-ملاحظة مهمة جدا: عمود property_type يحتوي على قيم انجليزية فقط، من ضمنها:
+ملاحظة مهمة جدا: عمود property_type يحتوي على قيم انجليزية فقط:
 Villa, Duplex, Chalet, Apartment, Townhouse, Twinhouse, Cabin, Penthouse, Office, Loft, Studio, Medical, Family House, Retail, Building.
-لازم تترجم كلام المستخدم العربي للقيمة الانجليزية المطابقة قبل ما تكتب SQL. مثال: "شقة" -> Apartment, "فيلا" -> Villa, "دوبلكس" -> Duplex, "شاليه" -> Chalet, "تاون هاوس" -> Townhouse, "بنتهاوس" -> Penthouse, "استوديو" -> Studio, "مكتب" -> Office, "محل" -> Retail.
+لازم تترجم كلام المستخدم العربي للقيمة الانجليزية المطابقة قبل ما تكتب SQL، مثال:
+"شقة" -> Apartment, "فيلا" -> Villa, "دوبلكس" -> Duplex, "شاليه" -> Chalet, "تاون هاوس" -> Townhouse,
+"توين هاوس" -> Twinhouse, "بنتهاوس" -> Penthouse, "استوديو" -> Studio, "مكتب" -> Office, "محل" -> Retail,
+"كابينة" -> Cabin, "مبنى" -> Building.
 
-ملاحظة مهمة جدا: عمود location قد يحتوي على اسماء مناطق بالانجليزي او مترجمة صوتيا (transliterated)، وليس بالعربي دايما. لو المستخدم كتب اسم منطقة بالعربي، حاول تولد اكتر من صيغة محتملة بالانجليزي باستخدام OR، مثال:
-"التجمع" -> location ILIKE '%New Cairo%' OR location ILIKE '%Tagamo%' OR location ILIKE '%5th Settlement%'
-"الشيخ زايد" -> location ILIKE '%Sheikh Zayed%' OR location ILIKE '%Zayed%'
-"العاصمة الادارية" -> location ILIKE '%New Capital%' OR location ILIKE '%Administrative Capital%'
+ملاحظة مهمة جدا: عمود location يحتوي فقط على القيم الانجليزية دي بالظبط (استخدم ILIKE على القيمة المطابقة، ومتعملش تخمين لقيم تانية):
+6th of October City, Ain Sokhna, Al Agamy, Al Alamein, Al Dabaa, Alexandria, Central Cairo, El Choueifat,
+El Gouna, El Lotus, El Sheikh Zayed, El Shorouk, Ghazala Bay, Golden Square, Heliopolis, Hurghada, Maadi,
+Madinaty, Makadi, Mokattam, Mostakbal City, Nasr City, New Alamein, New Cairo, New Cairo - 5th Settlement,
+New Capital City, New Capital Gardens, New Heliopolis, New Sphinx, New Zayed, North Coast-Sahel,
+North Coast-sahel, North Investors, Northern Expansion, October Gardens, Old Cairo, Port Said,
+Qesm Borg El Arab, Ras El Hekma, Ras Sudr, Sahl Hasheesh, Sidi Abdel Rahman, Sidi Heneish, Somabay,
+South Investors, South New Cairo.
+
+ترجمة اسماء المناطق من العربي للانجليزي (استخدم ILIKE '%...%' على القيمة المطابقة، ولو فيه اكتر من قيمة محتملة استخدم OR بين قوسين):
+"التجمع" أو "التجمع الخامس" أو "الخامس" -> location ILIKE '%New Cairo%' OR location ILIKE '%5th Settlement%'
+"التجمع الجنوبي" -> location ILIKE '%South New Cairo%'
+"الشيخ زايد" -> location ILIKE '%Sheikh Zayed%'
+"زايد الجديدة" أو "نيو زايد" -> location ILIKE '%New Zayed%'
+"العاصمة الادارية" أو "العاصمة" -> location ILIKE '%New Capital City%' OR location ILIKE '%New Capital Gardens%'
 "المعادي" -> location ILIKE '%Maadi%'
-"الساحل الشمالي" -> location ILIKE '%North Coast%' OR location ILIKE '%Sahel%'
+"الساحل الشمالي" أو "الساحل" -> location ILIKE '%North Coast%'
+"مدينتي" -> location ILIKE '%Madinaty%'
+"مستقبل سيتي" -> location ILIKE '%Mostakbal City%'
+"الشروق" -> location ILIKE '%El Shorouk%'
+"مدينة نصر" -> location ILIKE '%Nasr City%'
+"مصر الجديدة" أو "هليوبوليس" -> location ILIKE '%Heliopolis%'
+"هليوبوليس الجديدة" -> location ILIKE '%New Heliopolis%'
+"المقطم" -> location ILIKE '%Mokattam%'
+"القاهرة القديمة" -> location ILIKE '%Old Cairo%'
+"وسط البلد" أو "القاهرة الخديوية" -> location ILIKE '%Central Cairo%'
+"السادس من أكتوبر" أو "أكتوبر" -> location ILIKE '%6th of October City%'
+"حدائق أكتوبر" -> location ILIKE '%October Gardens%'
+"العلمين" -> location ILIKE '%Al Alamein%' OR location ILIKE '%New Alamein%'
+"الدبعة" -> location ILIKE '%Al Dabaa%'
+"العجمي" -> location ILIKE '%Al Agamy%'
+"الاسكندرية" -> location ILIKE '%Alexandria%'
+"العين السخنة" أو "السخنة" -> location ILIKE '%Ain Sokhna%'
+"الغردقة" -> location ILIKE '%Hurghada%'
+"الجونة" -> location ILIKE '%El Gouna%'
+"مكادي" -> location ILIKE '%Makadi%'
+"سهل حشيش" -> location ILIKE '%Sahl Hasheesh%'
+"سوما باي" -> location ILIKE '%Somabay%'
+"غزالة باي" -> location ILIKE '%Ghazala Bay%'
+"رأس الحكمة" -> location ILIKE '%Ras El Hekma%'
+"رأس سدر" -> location ILIKE '%Ras Sudr%'
+"سيدي عبد الرحمن" -> location ILIKE '%Sidi Abdel Rahman%'
+"سيدي هنيش" -> location ILIKE '%Sidi Heneish%'
+"بورسعيد" -> location ILIKE '%Port Said%'
+"برج العرب" -> location ILIKE '%Qesm Borg El Arab%'
+"الشويفات" -> location ILIKE '%El Choueifat%'
+"اللوتس" -> location ILIKE '%El Lotus%'
+"سفينكس الجديدة" -> location ILIKE '%New Sphinx%'
+"المربع الذهبي" -> location ILIKE '%Golden Square%'
+"التوسعة الشمالية" -> location ILIKE '%Northern Expansion%'
+"المستثمرين الشمالية" -> location ILIKE '%North Investors%'
+"المستثمرين الجنوبية" -> location ILIKE '%South Investors%'
 
 القواعد:
 - ارجع كود SQL فقط بدون اي نص او markdown.
