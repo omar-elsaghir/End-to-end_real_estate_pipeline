@@ -2,22 +2,15 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import numpy as np
-import xgboost as xgb
+import onnxruntime as ort
 
 BASE = os.path.dirname(__file__)
 
-booster = xgb.Booster()
-booster.load_model(os.path.join(BASE, "artifacts", "model.json"))
+sess = ort.InferenceSession(os.path.join(BASE, "artifacts", "model.onnx"))
+input_name = sess.get_inputs()[0].name
 
 with open(os.path.join(BASE, "artifacts", "artifacts.json")) as f:
     A = json.load(f)
-
-FEATURE_COLS = [
-    "area", "log_area", "bedrooms", "bathrooms",
-    "bed_bath_ratio", "sqm_per_room", "location_encoded",
-    "loc_type_encoded", "compound_encoded", "location_count",
-    "property_type_enc", "log_area_x_location", "is_ready",
-]
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -31,7 +24,7 @@ class handler(BaseHTTPRequestHandler):
             location = body["location"]
             ptype = body["property_type"]
             compound = body.get("compound", "unknown")
-            is_ready = int(body.get("is_ready", 0))
+            is_ready = float(body.get("is_ready", 0))
 
             global_mean = A["global_mean"]
             location_encoded = A["smoothed_map"].get(location, global_mean)
@@ -42,20 +35,20 @@ class handler(BaseHTTPRequestHandler):
                 compound, A["compound_map"].get("unknown", global_mean)
             )
             le_classes = A["le_classes"]
-            property_type_enc = le_classes.index(ptype) if ptype in le_classes else -1
+            property_type_enc = float(le_classes.index(ptype)) if ptype in le_classes else -1.0
             log_area = float(np.log1p(area))
 
-            row = [[
+            row = [
                 area, log_area, bedrooms, bathrooms,
                 bedrooms / (bathrooms + 1),
                 area / (bedrooms + bathrooms + 1),
                 location_encoded, loc_type_encoded, compound_enc,
                 loc_count, property_type_enc,
                 log_area * location_encoded, is_ready,
-            ]]
+            ]
 
-            dmat = xgb.DMatrix(np.array(row), feature_names=FEATURE_COLS)
-            log_pred = booster.predict(dmat)[0]
+            row_arr = np.array([row], dtype=np.float32)
+            log_pred = sess.run(None, {input_name: row_arr})[0][0][0]
             price = float(np.expm1(log_pred))
 
             self._send(200, {"price_egp": round(price)})
