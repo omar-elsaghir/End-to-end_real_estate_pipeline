@@ -33,7 +33,13 @@ def call_gemini(user_query):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"parts": [{"text": user_query}]}]
+        "contents": [{"parts": [{"text": user_query}]}],
+        "generationConfig": {
+            "thinkingConfig": {
+                "thinkingBudget": 0
+            },
+            "maxOutputTokens": 1024
+        }
     }
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(),
@@ -44,11 +50,9 @@ def call_gemini(user_query):
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read())
     except urllib.error.HTTPError as e:
-        # Gemini returned a 4xx/5xx - surface the actual error body
         err_body = e.read().decode(errors="replace")
         raise Exception(f"Gemini API error ({e.code}): {err_body}")
 
-    # Check for a top-level error object (some failures come back as 200 + error field)
     if "error" in data:
         raise Exception(f"Gemini API error: {data['error']}")
 
@@ -57,8 +61,6 @@ def call_gemini(user_query):
         raise Exception(f"Gemini returned no candidates. Full response: {json.dumps(data)}")
 
     candidate = candidates[0]
-
-    # Handle safety blocks / truncation / other non-normal finishes
     finish_reason = candidate.get("finishReason")
     content = candidate.get("content")
 
