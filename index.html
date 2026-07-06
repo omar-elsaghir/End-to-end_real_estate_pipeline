@@ -563,14 +563,6 @@ function addAssistantMessage({ sql, columns, rows, error }) {
     tableWrap.appendChild(table);
     div.appendChild(tableWrap);
   }
-
-  if (sql) {
-    const sqlBox = document.createElement('div');
-    sqlBox.className = 'sql-box';
-    sqlBox.textContent = sql;
-    div.appendChild(sqlBox);
-  }
-
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
 }
