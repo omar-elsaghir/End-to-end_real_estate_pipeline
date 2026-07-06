@@ -24,7 +24,13 @@ SYSTEM_PROMPT = """
 - استخدم ILIKE للبحث النصي.
 - استخدم SQL Aliases واضحة للاعمدة.
 - تجنب كلمة order كاسم عمود، استخدم اسماء بديلة.
+- لو السؤال مش متعلق بالعقارات او البيانات (زي تحية، شكر، أو كلام عام)، ارجع بالظبط الجملة دي وبس بدون اي تعديل:
+NOT_A_DATA_QUERY
 """
+
+GREETING_SENTINEL = "NOT_A_DATA_QUERY"
+GREETING_RESPONSE_AR = "أهلاً بيك! اسأل عن أسعار العقارات، المناطق، أو الأنواع المتاحة وهجاوبك ببيانات حقيقية من السوق."
+
 
 def call_gemini(user_query):
     if not GEMINI_API_KEY:
@@ -76,6 +82,7 @@ def call_gemini(user_query):
 
     return text.replace("```sql", "").replace("```", "").strip()
 
+
 def run_databricks_sql(query):
     url = f"https://{DB_HOST}/api/2.0/sql/statements"
     payload = {
@@ -100,6 +107,7 @@ def run_databricks_sql(query):
     rows = result.get("result", {}).get("data_array", [])
     return columns, rows
 
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -112,6 +120,16 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             sql_query = call_gemini(user_query)
+
+            # Handle greetings / non-data queries without touching Databricks
+            if GREETING_SENTINEL in sql_query.upper():
+                self._send(200, {
+                    "sql": None,
+                    "columns": ["response"],
+                    "rows": [[GREETING_RESPONSE_AR]]
+                })
+                return
+
             columns, rows = run_databricks_sql(sql_query)
 
             self._send(200, {
