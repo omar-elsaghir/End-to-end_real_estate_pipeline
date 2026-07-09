@@ -15,6 +15,7 @@
 </div>
 
 ---
+**[🚀 View Live Demo Here](https://end-to-end-real-estate-pipeline.vercel.app/)**
 
 ## 📋 Table of Contents
 
@@ -25,7 +26,7 @@
   - [2. Databricks Lakehouse (Medallion)](#2-databricks-lakehouse-medallion-architecture)
 - [Downstream Products](#-downstream-products)
   - [Price Prediction Model](#1-price-prediction-model)
-  - [Conversational Chatbot (RAG)](#2-conversational-chatbot-rag)
+  - [Conversational Chatbot](#2-conversational-chatbot-rag)
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [Results & Discussion](#-results--discussion)
@@ -34,18 +35,18 @@
 
 ## ✨ Abstract & Overview
 
-The residential and commercial real estate markets generate large volumes of listing data across many independent platforms, but that data is fragmented, inconsistently structured, and rarely analysis-ready. 
+The residential and commercial real estate markets generate large volumes of listing data across many independent platforms, but that data is fmented, inconsistently structured, and rarely analysis-ready. 
 
 This project designs and implements an **end-to-end real estate data pipeline** that ingests listings from **five web-scraped property platforms**, processes them through a **Databricks Lakehouse** using the Medallion Architecture (Bronze, Silver, Gold), and delivers two downstream products:
 1. A **Machine Learning Model** that predicts property prices from listing attributes.
-2. A **Conversational Chatbot (RAG)** that lets end users query the market data and obtain price estimates in natural language.
+2. A **Conversational Chatbot ()** that lets end users query the market data and obtain price estimates in natural language.
 
 ---
 
 ## 🎯 Market Problem
 
 Real estate listings are scattered across dozens of independent platforms, each with its own layout, terminology, and update frequency. Buyers, sellers, and analysts who want a reliable, up-to-date view of the market face:
-- **Fragmented Data:** Visiting multiple sites manually to compare listings.
+- **Fmented Data:** Visiting multiple sites manually to compare listings.
 - **Inconsistent Quality:** Prices in different currencies, mixed area units, duplicate listings, and missing critical fields (like finishing level).
 - **No Reliable Pricing:** Without a systematic pipeline, raw data cannot be reliably used for pricing analysis, trend detection, or machine learning.
 
@@ -60,14 +61,14 @@ Listing data is collected daily from five live real estate platforms in Egypt, c
 - **Aqar Map** (General residential & commercial resale)
 - **Bayut** (Apartments, villas & duplex listings with finishing detail)
 - **Nawy** (New-development & off-plan project listings)
-- **Property Finder** (Rental & resale with strong neighborhood coverage)
+- **Property Finder** (Rental & resale with strong neighborhood covee)
 - **Dubizzle** (Commercial & investment property listings)
 
 *Tools: Scrapy handles static pages at scale; Selenium renders JavaScript-heavy listings.*
 
 ### 2. Databricks Lakehouse (Medallion Architecture)
 
-The pipeline utilizes **Databricks, Delta Lake, and PySpark** to enforce ACID transactions, time travel, and schema enforcement over cloud object storage.
+The pipeline utilizes **Databricks, Delta Lake, and PySpark** to enforce ACID transactions, time travel, and schema enforcement over cloud object stoe.
 
 | Layer | Purpose | Details |
 |-------|---------|---------|
@@ -101,7 +102,7 @@ A natural language assistant that answers market questions strictly grounded in 
 | **Lakehouse** | Databricks, Delta Lake, PySpark | Scalable ETL and Medallion architecture |
 | **ML Training** | XGBoost, LightGBM, scikit-learn, MLflow | Model training and experiment tracking |
 | **Model Serving** | Databricks Model Serving | Real-time REST endpoints for predictions |
-| **Chatbot / RAG** | Gemini LLM, Databricks SQL Connector | Natural-language queries over structured data |
+| **Chatbot** | Gemini LLM, Databricks SQL Connector | Natural-language queries over structured data |
 
 ---
 
