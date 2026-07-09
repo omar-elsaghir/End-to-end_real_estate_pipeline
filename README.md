@@ -26,7 +26,7 @@
   - [2. Databricks Lakehouse (Medallion)](#2-databricks-lakehouse-medallion-architecture)
 - [Downstream Products](#-downstream-products)
   - [Price Prediction Model](#1-price-prediction-model)
-  - [Conversational Chatbot](#2-conversational-chatbot-rag)
+  - [Conversational Chatbot](#2-conversational-chatbot)
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [Results & Discussion](#-results--discussion)
@@ -86,7 +86,7 @@ Using the curated Gold-layer features, we trained gradient-boosted ensembles to 
 - **Results:** **LightGBM** and **XGBoost** significantly outperformed linear models across MAE, RMSE, and R².
 - **MLOps:** Experiment versioning, hyperparameter tuning, and metric logging handled via **MLflow**. The best model is promoted to a **Databricks Model Serving** REST endpoint.
 
-### 2. Conversational Chatbot (RAG)
+### 2. Conversational Chatbot
 A natural language assistant that answers market questions strictly grounded in our data.
 - **Flow:** User asks an Arabic natural-language question → Gemini LLM translates the intent into an optimized Databricks SQL query (Text-to-SQL) → Query executes against the live Gold layer → Chatbot responds with a grounded answer citing specific data.
 - **No Hallucinations:** Every answer is strictly grounded in live Gold-layer data, not the LLM's prior training knowledge.
@@ -150,11 +150,11 @@ NHA-017/
 │
 ├── datasets_analysis_reports/          # EDA notebooks and analysis reports
 │
-├── ML_model/                           # Machine Learning components (Optional)
+├── ML_model/                           # Machine Learning components
 │   ├── knn_recommender.py              # KNN recommendation model
 │   └── train_model.py                  # Model training script
 │
-├── RAG/                                # AI Assistant components (Optional)
+├── RAG/                                # AI Assistant components 
 │   ├── app.py                          # Flask application for AI Assistant
 │   ├── ingest_embeddings.py            # Build FAISS index
 │   └── faiss_index.idx                 # FAISS vector index
@@ -177,6 +177,6 @@ NHA-017/
 ---
 <div align="center">
 
-**⭐ Digital Egypt Builders Initiative (DEPI) — July 2026 ⭐**
+**Digital Egypt Builders Initiative (DEPI) — July 2026**
 
 </div>
