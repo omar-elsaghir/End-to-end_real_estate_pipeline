@@ -39,7 +39,7 @@ The residential and commercial real estate markets generate large volumes of lis
 
 This project designs and implements an **end-to-end real estate data pipeline** that ingests listings from **five web-scraped property platforms**, processes them through a **Databricks Lakehouse** using the Medallion Architecture (Bronze, Silver, Gold), and delivers two downstream products:
 1. A **Machine Learning Model** that predicts property prices from listing attributes.
-2. A **Conversational Chatbot ()** that lets end users query the market data and obtain price estimates in natural language.
+2. A **Conversational Chatbot** that lets end users query the market data and obtain price estimates in natural language.
 
 ---
 
