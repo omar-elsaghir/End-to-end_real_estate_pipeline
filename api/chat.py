@@ -100,14 +100,12 @@ def call_gemini(user_query):
     if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY is not set in environment variables")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    # Changed model to gemini-1.5-flash which is very fast, capable, and has good rate limits
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"parts": [{"text": user_query}]}],
         "generationConfig": {
-            "thinkingConfig": {
-                "thinkingBudget": 0
-            },
             "maxOutputTokens": 1024
         }
     }
@@ -146,6 +144,56 @@ def call_gemini(user_query):
 
     return text.replace("```sql", "").replace("```", "").strip()
 
+
+def run_databricks_sql(query):
+    url = f"https://{DB_HOST}/api/2.0/sql/statements"
+    payload = {
+        "statement": query,
+        "warehouse_id": WAREHOUSE_ID,
+        "wait_timeout": "30s"
+    }
+    headers = {
+        "Authorization": f"Bearer {DATABRICKS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # 1. Send the initial query
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode(),
+        headers=headers, method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=40) as resp:
+        result = json.loads(resp.read())
+
+    # 2. Poll if the warehouse is waking up or the query is still running
+    while result.get("status", {}).get("state") in ["PENDING", "RUNNING"]:
+        statement_id = result.get("statement_id")
+        poll_url = f"https://{DB_HOST}/api/2.0/sql/statements/{statement_id}"
+
+        # Wait a couple of seconds before checking again
+        time.sleep(2)
+
+        poll_req = urllib.request.Request(
+            poll_url, headers=headers, method="GET"
+        )
+        with urllib.request.urlopen(poll_req, timeout=40) as resp:
+            result = json.loads(resp.read())
+
+    # 3. Check final status and handle errors gracefully
+    state = result.get("status", {}).get("state")
+    if state != "SUCCEEDED":
+        error_msg = result.get("status", {}).get("error", {}).get("message", "")
+        if state == "FAILED":
+            raise Exception(f"SQL Error: {error_msg}")
+        else:
+            raise Exception(
+                f"يتم الآن تشغيل خوادم قواعد البيانات، برجاء المحاولة مرة أخرى خلال دقيقة. (Status: {state})")
+
+    # 4. Extract data
+    columns = [c["name"] for c in result["manifest"]["schema"]["columns"]]
+    rows = result.get("result", {}).get("data_array", [])
+
+    return columns, rows
 
 def run_databricks_sql(query):
     url = f"https://{DB_HOST}/api/2.0/sql/statements"
