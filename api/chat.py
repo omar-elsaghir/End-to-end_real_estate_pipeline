@@ -3,6 +3,7 @@ import json
 import os
 import urllib.request
 import urllib.error
+import time
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
@@ -151,21 +152,40 @@ def run_databricks_sql(query):
         "warehouse_id": WAREHOUSE_ID,
         "wait_timeout": "30s"
     }
+    headers = {
+        "Authorization": f"Bearer {DATABRICKS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # 1. Send the initial query
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(),
-        headers={
-            "Authorization": f"Bearer {DATABRICKS_TOKEN}",
-            "Content-Type": "application/json"
-        }, method="POST"
+        headers=headers, method="POST"
     )
-    with urllib.request.urlopen(req, timeout=35) as resp:
+    with urllib.request.urlopen(req, timeout=40) as resp:
         result = json.loads(resp.read())
+    # 2. Poll if the warehouse is waking up or the query is still running
+    while result.get("status", {}).get("state") in ["PENDING", "RUNNING"]:
+        statement_id = result.get("statement_id")
+        poll_url = f"https://{DB_HOST}/api/2.0/sql/statements/{statement_id}"
 
-    if result.get("status", {}).get("state") != "SUCCEEDED":
-        raise Exception(f"Query did not succeed: {result.get('status')}")
+        # Wait a couple of seconds before checking again
+        time.sleep(2)
 
+        poll_req = urllib.request.Request(
+            poll_url, headers=headers, method="GET"
+        )
+        with urllib.request.urlopen(poll_req, timeout=40) as resp:
+            result = json.loads(resp.read())
+    # 3. Check final status
+    state = result.get("status", {}).get("state")
+    if state != "SUCCEEDED":
+        # Provide a friendlier Arabic message if it fails or times out
+        raise Exception(f"Database is warming up or query failed. Try again! (Status: {state})")
+    # 4. Extract data
     columns = [c["name"] for c in result["manifest"]["schema"]["columns"]]
     rows = result.get("result", {}).get("data_array", [])
+
     return columns, rows
 
 
