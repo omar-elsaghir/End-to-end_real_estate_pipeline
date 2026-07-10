@@ -86,7 +86,9 @@ South Investors, South New Cairo.
 - استخدم ILIKE للبحث النصي، وحط اي شروط OR بين قوسين صح نحويا.
 - استخدم SQL Aliases واضحة للاعمدة.
 - تجنب كلمة order كاسم عمود، استخدم اسماء بديلة.
-- لو السؤال مش متعلق بالعقارات او البيانات (زي تحية، شكر، أو كلام عام)، ارجع بالظبط الجملة دي وبس بدون اي تعديل:
+
+- تنبيه هام جدا: لو المستخدم طلب عقار بشكل عام (مثلا "عايز شقة" أو "I want an apartment" أو "محتاج فيلا")، ده يعتبر سؤال بيانات! لازم ترجع كود SQL يجيب عينة من العقارات دي وتستخدم LIMIT 10.
+- فقط لو السؤال مجرد تحية أو شكر ولا يحتوي على أي طلب عقاري (مثلا "السلام عليكم" أو "شكرا")، ارجع بالظبط الجملة دي وبس بدون اي تعديل:
 NOT_A_DATA_QUERY
 """
 
@@ -164,6 +166,7 @@ def run_databricks_sql(query):
     )
     with urllib.request.urlopen(req, timeout=40) as resp:
         result = json.loads(resp.read())
+
     # 2. Poll if the warehouse is waking up or the query is still running
     while result.get("status", {}).get("state") in ["PENDING", "RUNNING"]:
         statement_id = result.get("statement_id")
@@ -177,11 +180,13 @@ def run_databricks_sql(query):
         )
         with urllib.request.urlopen(poll_req, timeout=40) as resp:
             result = json.loads(resp.read())
+
     # 3. Check final status
     state = result.get("status", {}).get("state")
     if state != "SUCCEEDED":
         # Provide a friendlier Arabic message if it fails or times out
-        raise Exception(f"Database is warming up or query failed. Try again! (Status: {state})")
+        raise Exception(f"يتم الآن تشغيل خوادم قواعد البيانات، برجاء المحاولة مرة أخرى خلال دقيقة. (Status: {state})")
+
     # 4. Extract data
     columns = [c["name"] for c in result["manifest"]["schema"]["columns"]]
     rows = result.get("result", {}).get("data_array", [])
@@ -202,8 +207,8 @@ class handler(BaseHTTPRequestHandler):
 
             sql_query = call_gemini(user_query)
 
-            # Handle greetings / non-data queries without touching Databricks
-            if GREETING_SENTINEL in sql_query.upper():
+            # Fix: Exact match for the greeting sentinel to prevent false positives
+            if sql_query.strip().upper() == GREETING_SENTINEL:
                 self._send(200, {
                     "sql": None,
                     "columns": ["response"],
