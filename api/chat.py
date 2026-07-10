@@ -100,6 +100,7 @@ def call_gemini(user_query):
     if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY is not set in environment variables")
 
+    # THIS WILL CRASH THE BUILD INSTANTLY
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
