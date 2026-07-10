@@ -100,8 +100,7 @@ def call_gemini(user_query):
     if not GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY is not set in environment variables")
 
-    # Changed model to gemini-1.5-flash which is very fast, capable, and has good rate limits
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"parts": [{"text": user_query}]}],
@@ -170,7 +169,6 @@ def run_databricks_sql(query):
         statement_id = result.get("statement_id")
         poll_url = f"https://{DB_HOST}/api/2.0/sql/statements/{statement_id}"
 
-        # Wait a couple of seconds before checking again
         time.sleep(2)
 
         poll_req = urllib.request.Request(
@@ -195,56 +193,6 @@ def run_databricks_sql(query):
 
     return columns, rows
 
-def run_databricks_sql(query):
-    url = f"https://{DB_HOST}/api/2.0/sql/statements"
-    payload = {
-        "statement": query,
-        "warehouse_id": WAREHOUSE_ID,
-        "wait_timeout": "30s"
-    }
-    headers = {
-        "Authorization": f"Bearer {DATABRICKS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    # 1. Send the initial query
-    req = urllib.request.Request(
-        url, data=json.dumps(payload).encode(),
-        headers=headers, method="POST"
-    )
-    with urllib.request.urlopen(req, timeout=40) as resp:
-        result = json.loads(resp.read())
-
-    # 2. Poll if the warehouse is waking up or the query is still running
-    while result.get("status", {}).get("state") in ["PENDING", "RUNNING"]:
-        statement_id = result.get("statement_id")
-        poll_url = f"https://{DB_HOST}/api/2.0/sql/statements/{statement_id}"
-
-        # Wait a couple of seconds before checking again
-        time.sleep(2)
-
-        poll_req = urllib.request.Request(
-            poll_url, headers=headers, method="GET"
-        )
-        with urllib.request.urlopen(poll_req, timeout=40) as resp:
-            result = json.loads(resp.read())
-
-    # 3. Check final status
-    state = result.get("status", {}).get("state")
-    if state != "SUCCEEDED":
-        error_msg = result.get("status", {}).get("error", {}).get("message", "")
-        if state == "FAILED":
-            raise Exception(f"SQL Error: {error_msg}")
-        else:
-            raise Exception(f"يتم الآن تشغيل خوادم قواعد البيانات... (Status: {state})")
-
-
-    # 4. Extract data
-    columns = [c["name"] for c in result["manifest"]["schema"]["columns"]]
-    rows = result.get("result", {}).get("data_array", [])
-
-    return columns, rows
-
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -259,7 +207,6 @@ class handler(BaseHTTPRequestHandler):
 
             sql_query = call_gemini(user_query)
 
-            # Fix: Exact match for the greeting sentinel to prevent false positives
             if sql_query.strip().upper() == GREETING_SENTINEL:
                 self._send(200, {
                     "sql": None,
