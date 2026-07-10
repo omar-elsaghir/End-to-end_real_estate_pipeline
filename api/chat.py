@@ -101,7 +101,7 @@ def call_gemini(user_query):
         raise Exception("GEMINI_API_KEY is not set in environment variables")
 
     # Changed model to gemini-1.5-flash which is very fast, capable, and has good rate limits
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"parts": [{"text": user_query}]}],
