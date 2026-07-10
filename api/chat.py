@@ -184,8 +184,12 @@ def run_databricks_sql(query):
     # 3. Check final status
     state = result.get("status", {}).get("state")
     if state != "SUCCEEDED":
-        # Provide a friendlier Arabic message if it fails or times out
-        raise Exception(f"يتم الآن تشغيل خوادم قواعد البيانات، برجاء المحاولة مرة أخرى خلال دقيقة. (Status: {state})")
+        error_msg = result.get("status", {}).get("error", {}).get("message", "")
+        if state == "FAILED":
+            raise Exception(f"SQL Error: {error_msg}")
+        else:
+            raise Exception(f"يتم الآن تشغيل خوادم قواعد البيانات... (Status: {state})")
+
 
     # 4. Extract data
     columns = [c["name"] for c in result["manifest"]["schema"]["columns"]]
